@@ -1,0 +1,9 @@
+name = "wrangler-kv-upload-failure"
+account_id = "my-cloudflare-account-id"
+main = "index.js"
+compatibility_date = "2023-01-30"
+workers_dev = true
+
+[site]
+bucket = "public"
+
