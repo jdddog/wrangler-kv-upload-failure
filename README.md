@@ -56,7 +56,7 @@ In the Workers KV dashboard delete the KV namespace `__wrangler-kv-upload-failur
 the previous run managed to upload files, which could affect these tests.
 
 Run the following commands:
-```
+```bash
 export NODE_OPTIONS=--max_old_space_size=40000
 wrangler publish
 ```
@@ -64,7 +64,7 @@ wrangler publish
 You should get one of two errors:
 
 a) Fetch failed:
-```
+```bash
 Uploaded 0% (0 out of 15,317)
 Uploaded 32% (5,000 out of 15,317)
 Uploaded 65% (10,000 out of 15,317)
@@ -75,7 +75,7 @@ Uploaded 100% (15,317 out of 15,317)
 ```
 
 b) Too many bulk operations already in progress:
-```
+```bash
 Uploaded 0% (0 out of 15,317)
 Uploaded 32% (5,000 out of 15,317)
 Uploaded 65% (10,000 out of 15,317)
