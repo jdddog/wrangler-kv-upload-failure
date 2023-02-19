@@ -4,16 +4,16 @@ These steps were tested on Ubuntu 22.04.
 1) Install dependencies:
 ```bash
 npm install
-sudo apt install imagemagick
 ```
 
 2) Make a wrangler.toml based on wrangler.example.toml by copying it and customising your account_id.
 
 ### BUG: workers-sites wrangler publish JavaScript heap out of memory #2223
-This bug is a deal breaker, because it means that you can't upload larger sites from environments such as Github Actions
-which don't have a huge amount of memory.
+This bug is a deal-breaker, because it means that you can't upload larger sites from environments such as Github Actions
+which don't have a huge amount of memory. When you use the `NODE_OPTIONS=--max_old_space_size=...` workaround, NodeJS 
+memory use peaks at ~19GB for uploading this example site, whereas a standard Github Actions runner only has 7GB of memory.
 
-Download public.zip which contains a Next.js statically rendered site with 20,000 pages:
+Download public.zip which contains a Next.js statically rendered site with 15,000 pages, 30K files, 3.6GB: https://pub-41e3be22ae8f4b41be1f4e75e2300468.r2.dev/public.zip
 
 Extract public.zip into this project.
 
@@ -52,15 +52,18 @@ FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memor
 ```
 
 ## BUG: ✘ [ERROR] fetch failed when publishing a workers-site #2245
-Then run the following commands:
+In the Workers KV dashboard delete the KV namespace `__wrangler-kv-upload-failure-workers_sites_assets` in case
+the previous run managed to upload files, which could affect these tests.
+
+Run the following commands:
 ```
 export NODE_OPTIONS=--max_old_space_size=40000
 wrangler publish
 ```
 
-You should get one of two errors.
+You should get one of two errors:
 
-Fetch failed:
+a) Fetch failed:
 ```
 Uploaded 0% (0 out of 15,317)
 Uploaded 32% (5,000 out of 15,317)
@@ -71,13 +74,13 @@ Uploaded 100% (15,317 out of 15,317)
 ✘ [ERROR] fetch failed
 ```
 
-Or too many bulk operations already in progress:
+b) Too many bulk operations already in progress:
 ```
-Uploaded 0% (0 out of 20,316)
-Uploaded 24% (5,000 out of 20,316)
-Uploaded 49% (10,000 out of 20,316)
-Uploaded 73% (15,000 out of 20,316)
-Uploaded 98% (20,000 out of 20,316)
+Uploaded 0% (0 out of 15,317)
+Uploaded 32% (5,000 out of 15,317)
+Uploaded 65% (10,000 out of 15,317)
+Uploaded 97% (15,000 out of 15,317)
+Uploaded 100% (15,317 out of 15,317)
 
 ✘ [ERROR] A request to the Cloudflare API (/accounts/***/storage/kv/namespaces/***/bulk) failed.
 
@@ -89,39 +92,11 @@ Uploaded 98% (20,000 out of 20,316)
 
 ```
 
-Running wrangler publish again is often successful.
+Also note that the command line is not printing the progress percentage of the total number of files, as there are over 
+30,000 files being uploaded, not 15,000.
 
-## BUG: Too many bulk operations already in progress
-Uploading images (just to test things) seems to give the bulk operations in progress error.
+Running `wrangler publish` again is often successful, probably because half of the files are already uploaded, so the
+next time `wrangler publish` is run there are less bulk requests being run at the same time.
 
-In the Workers KV dashboard delete the KV namespace `__wrangler-kv-upload-failure-workers_sites_assets` so that there are no KV entries in the namespace.
-
-Delete the current public folder with the website data.
-
-Generate 100K images in the `public folder` with imagemagick:
-```bash
-mkdir public
-cd public
-for i in {1..100000}; do convert -size 128x128 xc: +noise Random jpg:random-$i.jpg; done
-cd ..
-```
-It should take around 10 minutes to generate 100K files, which is about 2.6 GB.
-
-Run the following commands:
-```bash
-export NODE_OPTIONS=--max_old_space_size=40000
-wrangler publish
-```
-
-You should get this error on the first try:
-```bash
-✘ [ERROR] A request to the Cloudflare API (/accounts/***/storage/kv/namespaces/***/bulk) failed.
-
-  Too many bulk operations already in progress. Please wait until one completes before retrying.
-  [code: 10046]
-  
-  If you think this is a bug, please open an issue at:
-  https://github.com/cloudflare/workers-sdk/issues/new/choose
-```
-
-Then on the second try it should work.
+If you don't get an error, then in the Workers KV dashboard delete the KV namespace 
+`__wrangler-kv-upload-failure-workers_sites_assets` and try again.
